@@ -1,0 +1,92 @@
+// ตั้งค่าส่วนกลาง
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int             @id @default(autoincrement())
+  username      String          @unique
+  email         String          @unique
+  password      String
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  medicines     Medicine[]
+  medicineRecords MedicineRecord[]
+  notifications Notification[]
+  profile       Profile?
+}
+
+model Profile {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @unique
+  user          User     @relation(fields: [userId], references: [id])
+  fullName      String?
+  dateOfBirth   DateTime?
+  weight        Float?
+  height        Float?
+  disease       String?  // โรคประจำตัว
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Medicine {
+  id                Int           @id @default(autoincrement())
+  name              String
+  pillCount         String?
+  purpose           String?
+  intakeTime        String?
+  userId            Int
+  user              User          @relation(fields: [userId], references: [id])
+  isActive          Boolean       @default(true)
+  isDiabetesMedicine Boolean      @default(false) // เพิ่มฟิลด์นี้
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  notifications     Notification[]
+}
+
+model MedicineRecord {
+  id                 Int      @id @default(autoincrement())
+  userId             Int
+  user               User     @relation(fields: [userId], references: [id])
+  name               String   // ชื่อยา
+  dosage             String?  // ขนาดและวิธีรับประทาน
+  intakeTime         String?  // ช่วงเวลาทาน
+  purpose            String?  // สรรพคุณ
+  imageUrl           String?  // URL ภาพที่ใช้สแกน
+  ocrConfidence      Float?   // ระดับความเชื่อมั่นของ OCR (0-1)
+  createdAt          DateTime @default(now())
+  strength           String?  // ความแรงของยา (เช่น 500 mg)
+  isDiabetesMedicine Boolean  @default(false) // เพิ่มฟิลด์นี้
+}
+
+model Notification {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  title           String
+  message         String
+  medicineId      Int?
+  notificationTime DateTime
+  isRead          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  medicine        Medicine? @relation(fields: [medicineId], references: [id])
+  user            User     @relation(fields: [userId], references: [id])
+  takenMedicine   TakenMedicine?
+}
+
+model TakenMedicine {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  medicineId      Int
+  notificationId  Int      @unique
+  takenAt         DateTime
+  note            String?
+  notification    Notification @relation(fields: [notificationId], references: [id])
+}
